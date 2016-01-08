@@ -1,0 +1,119 @@
+<!-- This code was modified from the tutorial on http://socket.io/get-started/chat/
+
+  Formatting definetly not perfect, css especially needs refining.
+-->
+<!doctype html>
+<html>
+  <head>
+    <title>Pseudo-Random Number Generator</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font: 13px Helvetica, Arial; }
+      form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
+      form input { border: 0; padding: 10px; width: 100%; margin-right: .5%; }
+      /*#messages { list-style-type: none; margin: 0; padding: 0; }
+      #messages li { padding: 5px 10px; }
+      #messages li:nth-child(odd) { background: #eee; }*/
+      #randWrapper { position: relative; float: left; width:70%; height:100%; word-wrap: break-word}
+      .text-field { position: relative; width: 30%; padding: 30px;}
+      #freqChart {width: 30%; float:left;}
+      /*formating each bar of the graph*/
+      #freqChart div {font-size: 0.75em;font-family: sans-serif;color: white;
+        background-color: steelblue;text-align: right;padding: 0.75em;margin: 0.2em;}
+      #buttonWrapper{position: relative;float:bottom; bottom: 0;left:0;}
+    </style>
+  </head>  
+  <body>
+    <div id="randWrapper">
+      <h>Input</h>
+      <p id="input" class="text-field"></p>
+      <h>Output</h>
+      <p id="pseudorandom" class="text-field"></p>      
+    </div>    
+    <div id="freqChart"></div>
+    <div id = "buttonWrapper">
+      <button id="wiki">Insert a random Wikipedia Page</button>
+    </div>
+    <form action="">
+      <input id="m" autocomplete="off" />
+    </form>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
+  <script src="//d3js.org/d3.v3.min.js" charset="utf-8"></script>
+  <script>
+    var socket = io();  
+    $('form').on("input", function(){
+      var length = $('#input').text().length;
+      $('#input').append($('#m').val());
+      if (length>200){
+        $('#input').text($('#input').text().substr(1,length));
+      }
+      //emits input
+      socket.emit('input', $('#m').val());
+      //sets value back to ''
+      $('#m').val('');
+      return false;
+    });
+    $('button').on('click', function(event){
+      socket.emit('wiki',event.target);
+    });
+    /*Eventually might add mouse move event, first attempt
+    lead to poor seed.*/
+    /*$(document).mousemove(function(event){
+      var length = $('#input').text().length;
+      $('#input').append(event.screenX*event.screenY);
+      //
+      if (length>200){
+        $('#input').text($('#input').text().substr(1,length));
+      }
+      //emits input
+      socket.emit('input', (event.screenX*event.screenY).toString());
+      //sets value back to ''
+      $('#m').val('');
+      return false;
+    });*/
+    /*write function to replace repeated code*/
+    socket.on('output', function(output){
+      var length = $('#pseudorandom').text().length;
+      $('#pseudorandom').append(output);
+      //
+      if (length>200){
+        $('#pseudorandom').text($('#pseudorandom').text().substr(output.length,length));
+      }
+    });
+    socket.on('input', function(input){
+      var length = $('#input').text().length;
+      $('#input').append(input);
+      //
+      if (length>200){
+        $('#input').text($('#input').text().substr(input.length,length));
+      }
+    });
+    //This code is mostly from the following source http://bost.ocks.org/mike/bar/
+    //cheers Mike Bostock
+    socket.on('graph',function drawGraph(data) {
+      var scale = d3.scale.linear()
+      //Magic formating number!!!
+          .domain([0, d3.max(data)/4])
+          .range([0, data.length]);
+
+      var bars = d3.select("#freqChart")
+          .selectAll("div")
+          .data(data);
+       
+      // enter selection
+      bars
+          .enter().append("div");
+
+      // update selection
+      bars
+          .style("width", function (d) {return scale(d) + "%";})
+          .text(function (d) {return d;});
+      
+      // exit selection
+      bars
+          .exit().remove();
+    });
+  </script>
+  </body>
+</html>
